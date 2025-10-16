@@ -7,8 +7,20 @@
     body { font-family: Arial, sans-serif; padding: 20px; }
     textarea { width: 100%; height: 60px; margin-bottom: 10px; }
     button { padding: 5px 10px; margin-bottom: 20px; }
-    .opening { margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
-    .opening button { padding: 2px 6px; font-size: 0.9em; margin-left: 5px; }
+    .opening {
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between; /* 텍스트 왼쪽, 버튼 오른쪽 */
+    }
+    .buttons {
+      display: flex;
+      gap: 5px; /* 버튼 사이 간격 */
+    }
+    .opening button {
+      padding: 2px 6px;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
@@ -40,6 +52,10 @@
         const span = document.createElement('span');
         span.textContent = line;
 
+        // 버튼들을 담을 div
+        const btnDiv = document.createElement('div');
+        btnDiv.className = "buttons";
+
         const editBtn = document.createElement('button');
         editBtn.textContent = "수정";
         editBtn.onclick = () => editOpening(index);
@@ -48,9 +64,11 @@
         delBtn.textContent = "삭제";
         delBtn.onclick = () => removeOpening(index);
 
+        btnDiv.appendChild(editBtn);
+        btnDiv.appendChild(delBtn);
+
         div.appendChild(span);
-        div.appendChild(editBtn);
-        div.appendChild(delBtn);
+        div.appendChild(btnDiv);
         openingsDiv.appendChild(div);
       });
     }
@@ -60,7 +78,7 @@
       if(!text) return;
 
       if(editIndex !== null) {
-        // 수정 중이면 기존 내용을 교체
+        // 수정 중이면 기존 내용 교체
         openings[editIndex] = text;
         editIndex = null;
       } else {
