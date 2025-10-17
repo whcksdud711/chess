@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (버튼 아래 가로 배치)</title>
+  <title>체스 오프닝 (버튼/GIF 동시 표시)</title>
   <style>
     body { 
       font-size: 20px;
@@ -39,7 +39,8 @@
     .actions { 
       display: flex;       /* 버튼 가로 배치 */
       gap: 3px;            /* 버튼 간격 */
-      margin-top: 5px;     /* 토글과 버튼 사이 간격 */
+      margin-top: 5px;     
+      display: none;       /* 기본 숨김 */
     }
     img.gif-image { 
       max-width: 200px; 
@@ -66,7 +67,7 @@
     const rootDiv = document.getElementById('root');
     let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
     let allOpen = false;
-    let currentGifPath = null;
+    let currentActivePath = null; // 현재 활성 토글 경로
 
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
@@ -83,11 +84,10 @@
     function renderNode(node, path) {
       const div = document.createElement('div');
       div.className = 'toggle';
-
-      const depth = path.length;
       const pathKey = path.join('-');
       if (openPaths.has(pathKey)) div.classList.add('open');
 
+      const depth = path.length;
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
@@ -99,18 +99,24 @@
         if (div.classList.contains('open')) openPaths.add(pathKey);
         else openPaths.delete(pathKey);
 
-        if (node.gif) {
-          if (currentGifPath && currentGifPath !== pathKey) {
-            const prevDiv = document.querySelector(`[data-path='${currentGifPath}']`);
-            if (prevDiv) {
-              const prevImg = prevDiv.querySelector('img.gif-image');
-              if (prevImg) prevImg.style.display = 'none';
-            }
+        // 이전 활성 토글 버튼/GIF 숨기기
+        if (currentActivePath && currentActivePath !== pathKey) {
+          const prevDiv = document.querySelector(`[data-path='${currentActivePath}']`);
+          if (prevDiv) {
+            const prevImg = prevDiv.querySelector('img.gif-image');
+            if (prevImg) prevImg.style.display = 'none';
+            const prevActions = prevDiv.querySelector('.actions');
+            if (prevActions) prevActions.style.display = 'none';
           }
-          const img = div.querySelector('img.gif-image');
-          if (img) img.style.display = 'block';
-          currentGifPath = pathKey;
         }
+
+        // 현재 클릭한 토글의 버튼/GIF 보이기
+        const img = div.querySelector('img.gif-image');
+        if (img) img.style.display = 'block';
+        const actions = div.querySelector('.actions');
+        if (actions) actions.style.display = 'flex';
+
+        currentActivePath = pathKey;
 
         saveData();
       };
@@ -150,7 +156,7 @@
       delBtn.onclick = (e) => {
         e.stopPropagation();
         if (confirm('정말 삭제하시겠습니까?')) {
-          getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
+          getNodeByPath(data, path.slice(0,-1)).children.splice(path[path.length-1], 1);
           openPaths.delete(pathKey);
           render();
           saveData();
@@ -200,7 +206,7 @@
       const childrenDiv = document.createElement('div');
       childrenDiv.className = 'children';
       node.children.forEach((child, j) => {
-        childrenDiv.appendChild(renderNode(child, [...path, j]));
+        childrenDiv.appendChild(renderNode(child, [...path,j]));
       });
       div.appendChild(childrenDiv);
 
@@ -225,10 +231,10 @@
       allOpen = !allOpen;
       openPaths.clear();
       function traverse(arr, path=[]) {
-        arr.forEach((node, i) => {
-          const newPath = [...path, i];
-          if (allOpen) openPaths.add(newPath.join('-'));
-          traverse(node.children, newPath);
+        arr.forEach((node,i)=>{
+          const newPath = [...path,i];
+          if(allOpen) openPaths.add(newPath.join('-'));
+          traverse(node.children,newPath);
         });
       }
       traverse(data);
