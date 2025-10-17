@@ -2,39 +2,24 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (무한 토글)</title>
+  <title>체스 오프닝 (드래그 가능 버전)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     button { padding: 2px 6px; font-size: 0.85em; margin-left: 3px; }
-    .toggle {
-      margin-left: 20px;
-      margin-top: 5px;
-    }
-    .toggle-title {
-      cursor: pointer;
-      user-select: none;
-      display: inline-block;
-    }
+    .toggle { margin-left: 20px; margin-top: 5px; }
+    .toggle-title { cursor: pointer; user-select: none; display: inline-block; }
     .toggle-title::before {
       content: "▸";
       display: inline-block;
       margin-right: 6px;
       transition: transform 0.2s;
     }
-    .toggle.open > .toggle-title::before {
-      transform: rotate(90deg);
-    }
-    .children {
-      margin-left: 20px;
-      display: none;
-    }
-    .toggle.open > .children {
-      display: block;
-    }
-    .actions {
-      display: inline-block;
-      margin-left: 10px;
-    }
+    .toggle.open > .toggle-title::before { transform: rotate(90deg); }
+    .children { margin-left: 20px; display: none; }
+    .toggle.open > .children { display: block; }
+    .actions { display: inline-block; margin-left: 10px; }
+    .dragging { opacity: 0.5; }
+    .drop-target { border: 1px dashed #999; border-radius: 5px; }
   </style>
 </head>
 <body>
@@ -43,7 +28,6 @@
   <div id="root"></div>
 
   <script>
-    // 기본 데이터 (없으면 새로 생성)
     let data = JSON.parse(localStorage.getItem('toggleData')) || [
       {
         text: "1.e4 : 킹즈 폰 오프닝",
@@ -59,13 +43,12 @@
     ];
 
     const rootDiv = document.getElementById('root');
+    let draggedPath = null;
 
-    // 데이터 저장
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
     }
 
-    // 렌더링
     function render() {
       rootDiv.innerHTML = '';
       data.forEach((node, i) => {
@@ -73,53 +56,83 @@
       });
     }
 
-    // 노드 렌더링 (재귀)
     function renderNode(node, path) {
       const div = document.createElement('div');
       div.className = 'toggle';
+      div.draggable = true;
+
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
       title.onclick = () => div.classList.toggle('open');
 
-      // 액션 버튼 그룹
+      // 드래그 이벤트
+      div.addEventListener('dragstart', (e) => {
+        draggedPath = path;
+        div.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      div.addEventListener('dragend', () => {
+        div.classList.remove('dragging');
+        document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
+      });
+
+      div.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        div.classList.add('drop-target');
+      });
+
+      div.addEventListener('dragleave', () => {
+        div.classList.remove('drop-target');
+      });
+
+      div.addEventListener('drop', (e) => {
+        e.preventDefault();
+        div.classList.remove('drop-target');
+        if (!draggedPath) return;
+
+        const targetPath = path;
+        if (targetPath.join() === draggedPath.join()) return;
+
+        moveNode(data, draggedPath, targetPath);
+        draggedPath = null;
+        saveData();
+        render();
+      });
+
+      // 액션 버튼
       const actions = document.createElement('span');
       actions.className = 'actions';
 
-      // 하위 토글 추가 버튼
       const addBtn = document.createElement('button');
       addBtn.textContent = '+';
-      addBtn.title = '하위 토글 추가';
       addBtn.onclick = (e) => {
         e.stopPropagation();
         const newText = prompt('새 토글 내용을 입력하세요');
         if (newText) {
-          let target = getNodeByPath(data, path);
+          const target = getNodeByPath(data, path);
           target.children.push({ text: newText, children: [] });
           saveData();
           render();
         }
       };
 
-      // 수정 버튼
       const editBtn = document.createElement('button');
       editBtn.textContent = '✏️';
-      editBtn.title = '수정';
       editBtn.onclick = (e) => {
         e.stopPropagation();
         const newText = prompt('새 내용으로 수정하세요', node.text);
         if (newText) {
-          let target = getNodeByPath(data, path);
+          const target = getNodeByPath(data, path);
           target.text = newText;
           saveData();
           render();
         }
       };
 
-      // 삭제 버튼
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
-      delBtn.title = '삭제';
       delBtn.onclick = (e) => {
         e.stopPropagation();
         if (confirm('정말 삭제하시겠습니까?')) {
@@ -145,23 +158,32 @@
       return div;
     }
 
-    // 경로(path)를 통해 노드 찾기
     function getNodeByPath(arr, path) {
       return path.reduce((acc, cur) => acc.children ? acc.children[cur] : acc[cur], arr);
     }
 
-    // 노드 삭제
     function removeNode(arr, path) {
       if (path.length === 1) {
         arr.splice(path[0], 1);
         return;
       }
-      const parentPath = path.slice(0, -1);
-      const parent = getNodeByPath(arr, parentPath);
+      const parent = getNodeByPath(arr, path.slice(0, -1));
       parent.children.splice(path[path.length - 1], 1);
     }
 
-    // 최상위 토글 추가
+    function moveNode(arr, fromPath, toPath) {
+      const fromParent = fromPath.length === 1 ? arr : getNodeByPath(arr, fromPath.slice(0, -1)).children;
+      const node = fromParent.splice(fromPath[fromPath.length - 1], 1)[0];
+
+      const toParent = toPath.length === 1 ? arr : getNodeByPath(arr, toPath.slice(0, -1)).children;
+      const targetIndex = toPath[toPath.length - 1];
+
+      // 같은 부모일 때만 순서 변경
+      if (fromParent === toParent) {
+        toParent.splice(targetIndex, 0, node);
+      }
+    }
+
     function addRootToggle() {
       const text = prompt('최상위 토글 내용을 입력하세요');
       if (text) {
