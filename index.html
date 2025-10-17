@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (드래그 가능 버전)</title>
+  <title>체스 오프닝 (모바일 드래그 지원)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     button { padding: 2px 6px; font-size: 0.85em; margin-left: 3px; }
@@ -18,9 +18,10 @@
     .children { margin-left: 20px; display: none; }
     .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
-    .dragging { opacity: 0.5; }
-    .drop-target { border: 1px dashed #999; border-radius: 5px; }
+    .drop-target { background-color: #f0f0f0; border-radius: 5px; }
   </style>
+  <!-- ✅ SortableJS (모바일 드래그 지원용 라이브러리) -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
   <h1>체스 오프닝</h1>
@@ -28,6 +29,7 @@
   <div id="root"></div>
 
   <script>
+    // 초기 데이터
     let data = JSON.parse(localStorage.getItem('toggleData')) || [
       {
         text: "1.e4 : 킹즈 폰 오프닝",
@@ -43,7 +45,6 @@
     ];
 
     const rootDiv = document.getElementById('root');
-    let draggedPath = null;
 
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
@@ -54,59 +55,40 @@
       data.forEach((node, i) => {
         rootDiv.appendChild(renderNode(node, [i]));
       });
+
+      // ✅ SortableJS 활성화 (모바일 드래그 지원)
+      document.querySelectorAll('.children').forEach((el) => {
+        new Sortable(el, {
+          animation: 150,
+          group: 'nested',
+          ghostClass: 'drop-target',
+          onEnd: function (evt) {
+            const parentPath = getParentPathByElement(el);
+            const parent = getNodeByPath(data, parentPath);
+            const moved = parent.children.splice(evt.oldIndex, 1)[0];
+            parent.children.splice(evt.newIndex, 0, moved);
+            saveData();
+            render();
+          }
+        });
+      });
     }
 
     function renderNode(node, path) {
       const div = document.createElement('div');
       div.className = 'toggle';
-      div.draggable = true;
 
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
       title.onclick = () => div.classList.toggle('open');
 
-      // 드래그 이벤트
-      div.addEventListener('dragstart', (e) => {
-        draggedPath = path;
-        div.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-      });
-
-      div.addEventListener('dragend', () => {
-        div.classList.remove('dragging');
-        document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-      });
-
-      div.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        div.classList.add('drop-target');
-      });
-
-      div.addEventListener('dragleave', () => {
-        div.classList.remove('drop-target');
-      });
-
-      div.addEventListener('drop', (e) => {
-        e.preventDefault();
-        div.classList.remove('drop-target');
-        if (!draggedPath) return;
-
-        const targetPath = path;
-        if (targetPath.join() === draggedPath.join()) return;
-
-        moveNode(data, draggedPath, targetPath);
-        draggedPath = null;
-        saveData();
-        render();
-      });
-
-      // 액션 버튼
       const actions = document.createElement('span');
       actions.className = 'actions';
 
       const addBtn = document.createElement('button');
       addBtn.textContent = '+';
+      addBtn.title = '하위 토글 추가';
       addBtn.onclick = (e) => {
         e.stopPropagation();
         const newText = prompt('새 토글 내용을 입력하세요');
@@ -120,6 +102,7 @@
 
       const editBtn = document.createElement('button');
       editBtn.textContent = '✏️';
+      editBtn.title = '수정';
       editBtn.onclick = (e) => {
         e.stopPropagation();
         const newText = prompt('새 내용으로 수정하세요', node.text);
@@ -133,6 +116,7 @@
 
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
+      delBtn.title = '삭제';
       delBtn.onclick = (e) => {
         e.stopPropagation();
         if (confirm('정말 삭제하시겠습니까?')) {
@@ -171,19 +155,6 @@
       parent.children.splice(path[path.length - 1], 1);
     }
 
-    function moveNode(arr, fromPath, toPath) {
-      const fromParent = fromPath.length === 1 ? arr : getNodeByPath(arr, fromPath.slice(0, -1)).children;
-      const node = fromParent.splice(fromPath[fromPath.length - 1], 1)[0];
-
-      const toParent = toPath.length === 1 ? arr : getNodeByPath(arr, toPath.slice(0, -1)).children;
-      const targetIndex = toPath[toPath.length - 1];
-
-      // 같은 부모일 때만 순서 변경
-      if (fromParent === toParent) {
-        toParent.splice(targetIndex, 0, node);
-      }
-    }
-
     function addRootToggle() {
       const text = prompt('최상위 토글 내용을 입력하세요');
       if (text) {
@@ -191,6 +162,20 @@
         saveData();
         render();
       }
+    }
+
+    // ✅ 헬퍼: 부모의 경로 찾기
+    function getParentPathByElement(el) {
+      const parents = [];
+      let current = el.parentElement.closest('.toggle');
+      while (current) {
+        const parentChildren = current.parentElement.closest('.children');
+        if (!parentChildren) break;
+        const index = Array.from(parentChildren.children).indexOf(current);
+        if (index >= 0) parents.unshift(index);
+        current = parentChildren.parentElement.closest('.toggle');
+      }
+      return parents;
     }
 
     render();
