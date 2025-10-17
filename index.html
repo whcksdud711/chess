@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (버튼 네모 + 이모지)</title>
+  <title>체스 오프닝 (GIF 포함)</title>
   <style>
     body { 
       font-size: 20px;
@@ -11,7 +11,7 @@
       background-color: rgb(144,144,144); /* 중간 회색 배경 */
     }
     button {
-      font-size: 0.75em;
+      font-size: 0.75em; /* 버튼 글자 작게 */
       padding: 2px 2px;
       margin-left: 3px;
       cursor: pointer;
@@ -33,6 +33,7 @@
     .children { margin-left: 5px; display: none; } /* 들여쓰기 5px */
     .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
+    img.gif-image { max-width: 200px; display: block; margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -42,9 +43,9 @@
 
   <script>
     let data = JSON.parse(localStorage.getItem('toggleData')) || [
-      { text: "1.e4 : 킹즈 폰 오프닝", children: [
-          { text: "1...e5 : 오픈 게임", children: [
-              { text: "2.Nf3 : 킹즈 나이트 오프닝", children: [] }
+      { text: "1.e4 : 킹즈 폰 오프닝", gif: "", children: [
+          { text: "1...e5 : 오픈 게임", gif: "", children: [
+              { text: "2.Nf3 : 킹즈 나이트 오프닝", gif: "", children: [] }
           ]}
       ]}
     ];
@@ -88,6 +89,7 @@
       const actions = document.createElement('span');
       actions.className = 'actions';
 
+      // 하위 토글 추가
       const addBtn = document.createElement('button');
       addBtn.textContent = '➕';
       addBtn.title = '하위 토글 추가';
@@ -95,12 +97,13 @@
         e.stopPropagation();
         const newText = prompt('새 토글 내용을 입력하세요');
         if (newText) {
-          getNodeByPath(data, path).children.push({ text: newText, children: [] });
+          getNodeByPath(data, path).children.push({ text: newText, gif: "", children: [] });
           render();
           saveData();
         }
       };
 
+      // 수정
       const editBtn = document.createElement('button');
       editBtn.textContent = '✏️';
       editBtn.title = '수정';
@@ -114,6 +117,7 @@
         }
       };
 
+      // 삭제
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
       delBtn.title = '삭제';
@@ -127,11 +131,37 @@
         }
       };
 
+      // GIF 추가/삭제
+      const gifBtn = document.createElement('button');
+      gifBtn.textContent = node.gif ? '❌ GIF 삭제' : '🖼️ GIF 추가';
+      gifBtn.title = node.gif ? 'GIF 삭제' : 'GIF 추가';
+      gifBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (node.gif) {
+          node.gif = "";
+        } else {
+          const url = prompt('GIF URL을 입력하세요');
+          if (url) node.gif = url;
+        }
+        render();
+        saveData();
+      };
+
       actions.appendChild(addBtn);
       actions.appendChild(editBtn);
       actions.appendChild(delBtn);
+      actions.appendChild(gifBtn);
       title.appendChild(actions);
       div.appendChild(title);
+
+      // GIF 렌더링
+      if (node.gif) {
+        const img = document.createElement('img');
+        img.src = node.gif;
+        img.alt = 'GIF';
+        img.className = 'gif-image';
+        div.appendChild(img);
+      }
 
       const childrenDiv = document.createElement('div');
       childrenDiv.className = 'children';
@@ -150,7 +180,7 @@
     function addRootToggle() {
       const text = prompt('최상위 토글 내용을 입력하세요');
       if (text) {
-        data.push({ text, children: [] });
+        data.push({ text, gif: "", children: [] });
         render();
         saveData();
       }
