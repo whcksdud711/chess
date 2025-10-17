@@ -2,41 +2,53 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (단일 브랜치 보기 + 버튼 표시 개선)</title>
+  <title>체스 오프닝 (2배 확대 버전)</title>
   <style>
     body { 
-      font-size: 20px;
+      font-size: 40px; /* 기존 20 → 40 */
       font-family: Arial, sans-serif; 
-      padding: 20px; 
+      padding: 40px; /* 기존 20 → 40 */
       background-color: rgb(144,144,144);
     }
+
     button {
-      font-size: 0.75em;
-      padding: 2px 4px;
-      margin-left: 3px;
+      font-size: 1.5em; /* 기존 0.75em → 1.5em (2배) */
+      padding: 4px 8px; /* 기존 2x4 → 4x8 */
+      margin-left: 6px; /* 기존 3 → 6 */
       cursor: pointer;
     }
-    .toggle { margin-top: 5px; }
+
+    .toggle { margin-top: 10px; } /* 기존 5 → 10 */
+
     .toggle-title {
       cursor: pointer;
       user-select: none;
       display: inline-block;
       font-weight: bold;
     }
+
     .toggle-title::before {
       content: "▸";
       display: inline-block;
-      margin-right: 6px;
+      margin-right: 12px; /* 기존 6 → 12 */
       transition: transform 0.2s;
     }
+
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-    .children { margin-left: 10px; display: none; }
+
+    .children { margin-left: 20px; display: none; } /* 기존 10 → 20 */
     .toggle.open > .children { display: block; }
+
     .actions {
-      display: none; /* 기본은 숨김 */
-      margin: 5px 0 0 25px;
+      display: none;
+      margin: 10px 0 0 50px; /* 여백도 2배 */
     }
-    img.gif-image { max-width: 200px; display: none; margin-top: 5px; }
+
+    img.gif-image { 
+      max-width: 400px; /* 기존 200 → 400 */
+      display: none;
+      margin-top: 10px; /* 기존 5 → 10 */
+    }
   </style>
 </head>
 <body>
@@ -62,7 +74,7 @@
     let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
     let allOpen = false;
     let currentGifPath = null;
-    let currentPath = []; // 현재 보고 있는 브랜치
+    let currentPath = [];
 
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
@@ -97,7 +109,7 @@
         else openPaths.delete(pathKey);
         saveData();
 
-        // === GIF 자동 표시 ===
+        // GIF 자동 표시
         if (node.gif) {
           if (currentGifPath && currentGifPath !== pathKey) {
             const prevDiv = document.querySelector(`[data-path='${currentGifPath}']`);
@@ -111,11 +123,11 @@
           currentGifPath = pathKey;
         }
 
-        // === 현재 브랜치만 표시 ===
+        // 현재 브랜치만 표시
         currentPath = path;
         updateVisibility(path);
 
-        // === 버튼 표시 업데이트 ===
+        // 버튼 표시 업데이트
         document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
         const thisActions = div.querySelector('.actions');
         if (thisActions) thisActions.style.display = 'block';
@@ -217,15 +229,13 @@
     }
 
     function goBack() {
-      if (currentPath.length === 0) return; // 이미 루트
+      if (currentPath.length === 0) return;
       currentPath = currentPath.slice(0, -1);
       if (currentPath.length === 0) {
         document.querySelectorAll('.toggle').forEach(div => div.style.display = 'block');
       } else {
         updateVisibility(currentPath);
       }
-
-      // 버튼 갱신
       document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
       const activeDiv = document.querySelector(`[data-path='${currentPath.join('-')}']`);
       if (activeDiv) {
