@@ -2,9 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (무한 토글, 상태 유지, 5px 들여쓰기)</title>
+  <title>체스 오프닝 (깊이별 색상, 연한 파랑 배경)</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      background-color: #a0c4ff; /* 연한 파랑 배경 */
+    }
     button { padding: 2px 6px; font-size: 0.85em; margin-left: 3px; }
     .toggle { margin-top: 5px; }
     .toggle-title { cursor: pointer; user-select: none; display: inline-block; }
@@ -15,7 +19,6 @@
       transition: transform 0.2s;
     }
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-    /* 하위 토글 들여쓰기 5px */
     .children { margin-left: 5px; display: none; }
     .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
@@ -27,7 +30,7 @@
   <div id="root"></div>
 
   <script>
-    // 기본 데이터 로딩
+    // 로컬스토리지에서 데이터 불러오기, 없으면 기본값
     let data = JSON.parse(localStorage.getItem('toggleData')) || [
       { text: "1.e4 : 킹즈 폰 오프닝", children: [
           { text: "1...e5 : 오픈 게임", children: [
@@ -37,7 +40,6 @@
     ];
 
     const rootDiv = document.getElementById('root');
-    // 열려 있는 토글 상태 저장
     let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
 
     function saveData() {
@@ -56,12 +58,15 @@
       const div = document.createElement('div');
       div.className = 'toggle';
 
+      const depth = path.length; // 1단계: 최상위
       const pathKey = path.join('-');
       if (openPaths.has(pathKey)) div.classList.add('open');
 
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
+      // 깊이에 따라 텍스트 색상 설정
+      title.style.color = depth % 2 === 1 ? 'white' : 'black';
 
       // 토글 열고 닫기
       title.onclick = (e) => {
@@ -69,7 +74,7 @@
         div.classList.toggle('open');
         if (div.classList.contains('open')) openPaths.add(pathKey);
         else openPaths.delete(pathKey);
-        saveData(); // 상태 저장
+        saveData();
       };
 
       const actions = document.createElement('span');
