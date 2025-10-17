@@ -2,13 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (GIF 보기 버튼)</title>
+  <title>체스 오프닝 (전체 열기/닫기 포함)</title>
   <style>
     body { 
       font-size: 20px;
       font-family: Arial, sans-serif; 
       padding: 20px; 
-      background-color: rgb(144,144,144); /* 중간 회색 배경 */
+      background-color: rgb(144,144,144);
     }
     button {
       font-size: 0.75em;
@@ -30,7 +30,7 @@
       transition: transform 0.2s;
     }
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-    .children { margin-left: 5px; display: none; } /* 들여쓰기 5px */
+    .children { margin-left: 5px; display: none; }
     .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
     img.gif-image { max-width: 200px; display: none; margin-top: 5px; }
@@ -39,6 +39,7 @@
 <body>
   <h1>체스 오프닝</h1>
   <button onclick="addRootToggle()">➕ 최상위 추가</button>
+  <button onclick="toggleAll()">전체 오프닝 열기/닫기</button>
   <div id="root"></div>
 
   <script>
@@ -52,6 +53,7 @@
 
     const rootDiv = document.getElementById('root');
     let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
+    let allOpen = false; // 전체 열기 상태
 
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
@@ -147,7 +149,7 @@
         saveData();
       };
 
-      // GIF 보기 버튼 (기본 숨김)
+      // GIF 보기 버튼
       const showGifBtn = document.createElement('button');
       showGifBtn.textContent = '👁️ GIF 보기';
       showGifBtn.title = 'GIF 보기';
@@ -165,13 +167,13 @@
       title.appendChild(actions);
       div.appendChild(title);
 
-      // GIF 렌더링 (기본 숨김)
+      // GIF 렌더링
       if (node.gif) {
         const img = document.createElement('img');
         img.src = node.gif;
         img.alt = 'GIF';
         img.className = 'gif-image';
-        img.style.display = 'none'; // 기본 숨김
+        img.style.display = 'none';
         div.appendChild(img);
       }
 
@@ -196,6 +198,22 @@
         render();
         saveData();
       }
+    }
+
+    // 전체 열기/닫기 버튼
+    function toggleAll() {
+      allOpen = !allOpen;
+      openPaths.clear();
+      function traverse(arr, path=[]) {
+        arr.forEach((node, i) => {
+          const newPath = [...path, i];
+          if (allOpen) openPaths.add(newPath.join('-'));
+          traverse(node.children, newPath);
+        });
+      }
+      traverse(data);
+      render();
+      saveData();
     }
 
     render();
