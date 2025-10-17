@@ -45,7 +45,7 @@ function saveData() {
 function render() {
   rootDiv.innerHTML = '';
   data.forEach((node, i) => rootDiv.appendChild(renderNode(node, [i])));
-  applySortable();
+  applySortable(); // 드래그 기능 적용
 }
 
 function renderNode(node, path) {
@@ -67,8 +67,7 @@ function renderNode(node, path) {
     e.stopPropagation();
     const newText = prompt('새 토글 내용을 입력하세요');
     if (newText) {
-      let target = getNodeByPath(data, path);
-      target.children.push({ text: newText, children: [] });
+      getNodeByPath(data, path).children.push({ text: newText, children: [] });
       saveData();
       render();
     }
@@ -81,8 +80,7 @@ function renderNode(node, path) {
     e.stopPropagation();
     const newText = prompt('새 내용으로 수정하세요', node.text);
     if (newText) {
-      let target = getNodeByPath(data, path);
-      target.text = newText;
+      getNodeByPath(data, path).text = newText;
       saveData();
       render();
     }
@@ -122,10 +120,9 @@ function getNodeByPath(arr, path) {
 function removeNode(arr, path) {
   if (path.length === 1) {
     arr.splice(path[0], 1);
-    return;
+  } else {
+    getNodeByPath(arr, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
   }
-  const parent = getNodeByPath(arr, path.slice(0, -1));
-  parent.children.splice(path[path.length - 1], 1);
 }
 
 function addRootToggle() {
@@ -137,6 +134,7 @@ function addRootToggle() {
   }
 }
 
+// 부모 경로 추적
 function getParentPathByElement(el) {
   const parents = [];
   let current = el.parentElement.closest('.children');
@@ -148,7 +146,9 @@ function getParentPathByElement(el) {
   return parents;
 }
 
+// 데스크탑 드래그 적용 (모바일은 드래그 X)
 function applySortable() {
+  if (/Mobi|Android/i.test(navigator.userAgent)) return; // 모바일이면 적용 안함
   document.querySelectorAll('.children').forEach((el) => {
     new Sortable(el, {
       animation: 150,
@@ -159,7 +159,7 @@ function applySortable() {
         const parent = getNodeByPath(data, parentPath);
         const moved = parent.children.splice(evt.oldIndex, 1)[0];
         parent.children.splice(evt.newIndex, 0, moved);
-        saveData(); // render() 호출 X → 무제한 드래그 가능
+        saveData(); // render() 호출 제거 → 무한 드래그 가능
       }
     });
   });
