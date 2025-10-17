@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (무한 토글, 상태 유지, 2px 들여쓰기)</title>
+  <title>체스 오프닝 (무한 토글, 상태 유지, 5px 들여쓰기)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     button { padding: 2px 6px; font-size: 0.85em; margin-left: 3px; }
@@ -15,8 +15,8 @@
       transition: transform 0.2s;
     }
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-    /* 하위 토글 들여쓰기 2px */
-    .children { margin-left: 2px; display: none; }
+    /* 하위 토글 들여쓰기 5px */
+    .children { margin-left: 5px; display: none; }
     .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
   </style>
@@ -27,7 +27,7 @@
   <div id="root"></div>
 
   <script>
-    // 로컬스토리지에서 데이터 불러오기, 없으면 기본값
+    // 기본 데이터 로딩
     let data = JSON.parse(localStorage.getItem('toggleData')) || [
       { text: "1.e4 : 킹즈 폰 오프닝", children: [
           { text: "1...e5 : 오픈 게임", children: [
@@ -37,11 +37,12 @@
     ];
 
     const rootDiv = document.getElementById('root');
-    let openPaths = new Set();
+    // 열려 있는 토글 상태 저장
+    let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
 
-    // 데이터 저장
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
+      localStorage.setItem('openPaths', JSON.stringify([...openPaths]));
     }
 
     function render() {
@@ -62,11 +63,13 @@
       title.className = 'toggle-title';
       title.textContent = node.text;
 
+      // 토글 열고 닫기
       title.onclick = (e) => {
         e.stopPropagation();
         div.classList.toggle('open');
         if (div.classList.contains('open')) openPaths.add(pathKey);
         else openPaths.delete(pathKey);
+        saveData(); // 상태 저장
       };
 
       const actions = document.createElement('span');
@@ -81,12 +84,12 @@
         const newText = prompt('새 토글 내용을 입력하세요');
         if (newText) {
           getNodeByPath(data, path).children.push({ text: newText, children: [] });
-          saveData();  // 저장
           render();
+          saveData();
         }
       };
 
-      // 수정 버튼
+      // 수정
       const editBtn = document.createElement('button');
       editBtn.textContent = '✏️';
       editBtn.title = '수정';
@@ -95,12 +98,12 @@
         const newText = prompt('새 내용으로 수정하세요', node.text);
         if (newText) {
           getNodeByPath(data, path).text = newText;
-          saveData();  // 저장
           render();
+          saveData();
         }
       };
 
-      // 삭제 버튼
+      // 삭제
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
       delBtn.title = '삭제';
@@ -109,8 +112,8 @@
         if (confirm('정말 삭제하시겠습니까?')) {
           getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
           openPaths.delete(pathKey);
-          saveData();  // 저장
           render();
+          saveData();
         }
       };
 
@@ -138,8 +141,8 @@
       const text = prompt('최상위 토글 내용을 입력하세요');
       if (text) {
         data.push({ text, children: [] });
-        saveData();  // 저장
         render();
+        saveData();
       }
     }
 
