@@ -2,106 +2,118 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝</title>
+  <title>체스 오프닝 (무한 토글)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    textarea { width: 100%; height: 60px; margin-bottom: 10px; }
-    button { padding: 5px 10px; margin-bottom: 20px; }
-    .opening {
-      margin-bottom: 5px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between; /* 텍스트 왼쪽, 버튼 오른쪽 */
+    button { padding: 2px 6px; font-size: 0.9em; margin-left: 5px; }
+    .toggle {
+      margin-left: 20px;
+      margin-top: 5px;
     }
-    .buttons {
-      display: flex;
-      gap: 5px; /* 버튼 사이 간격 */
+    .toggle-title {
+      cursor: pointer;
+      user-select: none;
+      display: inline-block;
     }
-    .opening button {
-      padding: 2px 6px;
-      font-size: 0.9em;
+    .toggle-title::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 6px;
+      transition: transform 0.2s;
+    }
+    .toggle.open > .toggle-title::before {
+      transform: rotate(90deg);
+    }
+    .children {
+      margin-left: 20px;
+      display: none;
+    }
+    .toggle.open > .children {
+      display: block;
     }
   </style>
 </head>
 <body>
   <h1>체스 오프닝</h1>
-
-  <h2>오프닝 추가/수정</h2>
-  <textarea id="editor" placeholder="예: 1.c4 : 영어 오프닝"></textarea><br>
-  <button onclick="saveOpening()">저장</button>
-
-  <h2>오프닝 목록</h2>
-  <div id="openings"></div>
+  <button onclick="addRootToggle()">+ 최상위 추가</button>
+  <div id="root"></div>
 
   <script>
-    let openings = JSON.parse(localStorage.getItem('chessOpenings')) || [
-      "1.e4 : 킹즈 폰 오프닝",
-      "1.d4 : 퀸즈 폰 오프닝"
+    let data = JSON.parse(localStorage.getItem('toggleData')) || [
+      {
+        text: "1.e4 : 킹즈 폰 오프닝",
+        children: [
+          {
+            text: "1...e5 : 오픈 게임",
+            children: [
+              { text: "2.Nf3 : 킹즈 나이트 오프닝", children: [] }
+            ]
+          }
+        ]
+      }
     ];
 
-    let editIndex = null; // 수정 중인 인덱스
+    const rootDiv = document.getElementById('root');
 
-    const openingsDiv = document.getElementById('openings');
+    function saveData() {
+      localStorage.setItem('toggleData', JSON.stringify(data));
+    }
 
-    function renderOpenings() {
-      openingsDiv.innerHTML = "";
-      openings.forEach((line, index) => {
-        const div = document.createElement('div');
-        div.className = "opening";
-
-        const span = document.createElement('span');
-        span.textContent = line;
-
-        // 버튼들을 담을 div
-        const btnDiv = document.createElement('div');
-        btnDiv.className = "buttons";
-
-        const editBtn = document.createElement('button');
-        editBtn.textContent = "수정";
-        editBtn.onclick = () => editOpening(index);
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = "삭제";
-        delBtn.onclick = () => removeOpening(index);
-
-        btnDiv.appendChild(editBtn);
-        btnDiv.appendChild(delBtn);
-
-        div.appendChild(span);
-        div.appendChild(btnDiv);
-        openingsDiv.appendChild(div);
+    function render() {
+      rootDiv.innerHTML = '';
+      data.forEach((node, i) => {
+        rootDiv.appendChild(renderNode(node, [i]));
       });
     }
 
-    function saveOpening() {
-      const text = document.getElementById('editor').value.trim();
-      if(!text) return;
+    function renderNode(node, path) {
+      const div = document.createElement('div');
+      div.className = 'toggle';
+      const title = document.createElement('div');
+      title.className = 'toggle-title';
+      title.textContent = node.text;
+      title.onclick = () => div.classList.toggle('open');
 
-      if(editIndex !== null) {
-        // 수정 중이면 기존 내용 교체
-        openings[editIndex] = text;
-        editIndex = null;
-      } else {
-        // 새로 추가
-        openings.push(text);
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '+';
+      addBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newText = prompt('새 토글 내용을 입력하세요');
+        if (newText) {
+          let target = getNodeByPath(data, path);
+          target.children.push({ text: newText, children: [] });
+          saveData();
+          render();
+        }
+      };
+
+      title.appendChild(addBtn);
+      div.appendChild(title);
+
+      const childrenDiv = document.createElement('div');
+      childrenDiv.className = 'children';
+      node.children.forEach((child, j) => {
+        childrenDiv.appendChild(renderNode(child, [...path, j]));
+      });
+
+      div.appendChild(childrenDiv);
+      return div;
+    }
+
+    function getNodeByPath(arr, path) {
+      return path.reduce((acc, cur) => acc.children ? acc.children[cur] : acc[cur], arr);
+    }
+
+    function addRootToggle() {
+      const text = prompt('최상위 토글 내용을 입력하세요');
+      if (text) {
+        data.push({ text, children: [] });
+        saveData();
+        render();
       }
-      document.getElementById('editor').value = "";
-      localStorage.setItem('chessOpenings', JSON.stringify(openings));
-      renderOpenings();
     }
 
-    function editOpening(index) {
-      document.getElementById('editor').value = openings[index];
-      editIndex = index;
-    }
-
-    function removeOpening(index) {
-      openings.splice(index, 1);
-      localStorage.setItem('chessOpenings', JSON.stringify(openings));
-      renderOpenings();
-    }
-
-    renderOpenings();
+    render();
   </script>
 </body>
 </html>
