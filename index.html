@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (무한 토글, 상태 유지)</title>
+  <title>체스 오프닝 (무한 토글, 상태 유지1)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     button { padding: 2px 6px; font-size: 0.85em; margin-left: 3px; }
@@ -15,7 +15,8 @@
       transition: transform 0.2s;
     }
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-    .children { margin-left: 20px; }
+    .children { margin-left: 20px; display: none; }
+    .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
   </style>
 </head>
@@ -36,7 +37,7 @@
 
     const rootDiv = document.getElementById('root');
 
-    // 열려 있는 토글 경로를 저장
+    // 열려 있는 토글 상태 저장
     let openPaths = new Set();
 
     function saveData() {
@@ -61,10 +62,14 @@
       title.className = 'toggle-title';
       title.textContent = node.text;
 
-      title.onclick = () => {
+      title.onclick = (e) => {
+        e.stopPropagation();
         div.classList.toggle('open');
-        if (div.classList.contains('open')) openPaths.add(pathKey);
-        else openPaths.delete(pathKey);
+        if (div.classList.contains('open')) {
+          openPaths.add(pathKey);
+        } else {
+          openPaths.delete(pathKey);
+        }
       };
 
       const actions = document.createElement('span');
@@ -77,9 +82,8 @@
         e.stopPropagation();
         const newText = prompt('새 토글 내용을 입력하세요');
         if (newText) {
-          let target = getNodeByPath(data, path);
-          target.children.push({ text: newText, children: [] });
-          saveData();
+          getNodeByPath(data, path).children.push({ text: newText, children: [] });
+          // 기존 열림 상태 유지
           render();
         }
       };
@@ -91,9 +95,7 @@
         e.stopPropagation();
         const newText = prompt('새 내용으로 수정하세요', node.text);
         if (newText) {
-          let target = getNodeByPath(data, path);
-          target.text = newText;
-          saveData();
+          getNodeByPath(data, path).text = newText;
           render();
         }
       };
@@ -104,9 +106,7 @@
       delBtn.onclick = (e) => {
         e.stopPropagation();
         if (confirm('정말 삭제하시겠습니까?')) {
-          removeNode(data, path);
-          saveData();
-          // 삭제된 토글이 열려있었다면 제거
+          getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
           openPaths.delete(pathKey);
           render();
         }
@@ -123,8 +123,8 @@
       node.children.forEach((child, j) => {
         childrenDiv.appendChild(renderNode(child, [...path, j]));
       });
-
       div.appendChild(childrenDiv);
+
       return div;
     }
 
@@ -132,16 +132,10 @@
       return path.reduce((acc, cur) => acc.children ? acc.children[cur] : acc[cur], arr);
     }
 
-    function removeNode(arr, path) {
-      if (path.length === 1) arr.splice(path[0], 1);
-      else getNodeByPath(arr, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
-    }
-
     function addRootToggle() {
       const text = prompt('최상위 토글 내용을 입력하세요');
       if (text) {
         data.push({ text, children: [] });
-        saveData();
         render();
       }
     }
