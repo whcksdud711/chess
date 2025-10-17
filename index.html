@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (전체 열기/닫기 포함 + GIF 삭제 확인)</title>
+  <title>체스 오프닝 (GIF 자동 표시)</title>
   <style>
     body { 
       font-size: 20px;
@@ -54,6 +54,7 @@
     const rootDiv = document.getElementById('root');
     let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
     let allOpen = false;
+    let currentGifPath = null; // 현재 보이는 GIF 경로
 
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
@@ -85,13 +86,28 @@
         div.classList.toggle('open');
         if (div.classList.contains('open')) openPaths.add(pathKey);
         else openPaths.delete(pathKey);
+
+        // GIF 자동 표시 로직
+        if (node.gif) {
+          // 이전 GIF 숨기기
+          if (currentGifPath && currentGifPath !== pathKey) {
+            const prevDiv = document.querySelector(`[data-path='${currentGifPath}']`);
+            if (prevDiv) {
+              const prevImg = prevDiv.querySelector('img.gif-image');
+              if (prevImg) prevImg.style.display = 'none';
+            }
+          }
+          const img = div.querySelector('img.gif-image');
+          if (img) img.style.display = 'block';
+          currentGifPath = pathKey;
+        }
+
         saveData();
       };
 
       const actions = document.createElement('span');
       actions.className = 'actions';
 
-      // 하위 토글 추가
       const addBtn = document.createElement('button');
       addBtn.textContent = '➕ 하위 오프닝 추가';
       addBtn.onclick = (e) => {
@@ -104,7 +120,6 @@
         }
       };
 
-      // 수정
       const editBtn = document.createElement('button');
       editBtn.textContent = '✏️ 수정';
       editBtn.onclick = (e) => {
@@ -117,7 +132,6 @@
         }
       };
 
-      // 삭제
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️ 삭제';
       delBtn.onclick = (e) => {
@@ -130,15 +144,12 @@
         }
       };
 
-      // GIF 추가/삭제
       const gifBtn = document.createElement('button');
       gifBtn.textContent = node.gif ? '❌ GIF 삭제' : '🖼️ GIF 추가';
       gifBtn.onclick = (e) => {
         e.stopPropagation();
         if (node.gif) {
-          if (confirm('정말 삭제하시겠습니까?')) {
-            node.gif = "";
-          }
+          if (confirm('정말 삭제하시겠습니까?')) node.gif = "";
         } else {
           const url = prompt('GIF URL을 입력하세요');
           if (url) node.gif = url;
@@ -147,7 +158,6 @@
         saveData();
       };
 
-      // GIF 보기/숨기기
       const showGifBtn = document.createElement('button');
       showGifBtn.textContent = '👁️ GIF 보이기/숨기기';
       showGifBtn.onclick = (e) => {
@@ -180,6 +190,9 @@
         childrenDiv.appendChild(renderNode(child, [...path, j]));
       });
       div.appendChild(childrenDiv);
+
+      // 데이터 경로 속성
+      div.dataset.path = pathKey;
 
       return div;
     }
