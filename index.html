@@ -2,27 +2,25 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (최종)</title>
+  <title>체스 오프닝 (버튼 네모 + 이모지)</title>
   <style>
     body { 
       font-family: Arial, sans-serif; 
       padding: 20px; 
-      background-color: rgb(128,128,128); /* 중간 회색 배경 */
+      background-color: rgb(160,160,160); /* 중간 회색 배경 */
     }
     button {
-      padding: 0;         /* padding 제거 */
-      border: none;       /* 테두리 제거 */
-      background: none;   /* 배경 제거 */
       font-size: 0.85em;
-      cursor: pointer;
+      padding: 2px 6px;
       margin-left: 3px;
+      cursor: pointer;
     }
     .toggle { margin-top: 5px; }
     .toggle-title {
       cursor: pointer;
       user-select: none;
       display: inline-block;
-      font-weight: bold; /* 텍스트 굵게 */
+      font-weight: bold; /* 굵게 */
     }
     .toggle-title::before {
       content: "▸";
@@ -38,7 +36,7 @@
 </head>
 <body>
   <h1>체스 오프닝</h1>
-  <button onclick="addRootToggle()">+ 최상위 추가</button>
+  <button onclick="addRootToggle()">➕ 최상위 추가</button>
   <div id="root"></div>
 
   <script>
@@ -76,7 +74,7 @@
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
-      title.style.color = depth % 2 === 1 ? '#ffffff' : '#000000'; // 홀수 흰색, 짝수 검은색
+      title.style.color = depth % 2 === 1 ? '#ffffff' : '#000000';
 
       title.onclick = (e) => {
         e.stopPropagation();
@@ -90,7 +88,7 @@
       actions.className = 'actions';
 
       const addBtn = document.createElement('button');
-      addBtn.textContent = '+';
+      addBtn.textContent = '➕';
       addBtn.title = '하위 토글 추가';
       addBtn.onclick = (e) => {
         e.stopPropagation();
