@@ -2,39 +2,21 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (무한 토글)</title>
+  <title>체스 오프닝 (무한 토글, 상태 유지)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     button { padding: 2px 6px; font-size: 0.85em; margin-left: 3px; }
-    .toggle {
-      margin-left: 20px;
-      margin-top: 5px;
-    }
-    .toggle-title {
-      cursor: pointer;
-      user-select: none;
-      display: inline-block;
-    }
+    .toggle { margin-left: 20px; margin-top: 5px; }
+    .toggle-title { cursor: pointer; user-select: none; display: inline-block; }
     .toggle-title::before {
       content: "▸";
       display: inline-block;
       margin-right: 6px;
       transition: transform 0.2s;
     }
-    .toggle.open > .toggle-title::before {
-      transform: rotate(90deg);
-    }
-    .children {
-      margin-left: 20px;
-      display: none;
-    }
-    .toggle.open > .children {
-      display: block;
-    }
-    .actions {
-      display: inline-block;
-      margin-left: 10px;
-    }
+    .toggle.open > .toggle-title::before { transform: rotate(90deg); }
+    .children { margin-left: 20px; }
+    .actions { display: inline-block; margin-left: 10px; }
   </style>
 </head>
 <body>
@@ -43,29 +25,24 @@
   <div id="root"></div>
 
   <script>
-    // 기본 데이터 (없으면 새로 생성)
+    // 기본 데이터
     let data = JSON.parse(localStorage.getItem('toggleData')) || [
-      {
-        text: "1.e4 : 킹즈 폰 오프닝",
-        children: [
-          {
-            text: "1...e5 : 오픈 게임",
-            children: [
+      { text: "1.e4 : 킹즈 폰 오프닝", children: [
+          { text: "1...e5 : 오픈 게임", children: [
               { text: "2.Nf3 : 킹즈 나이트 오프닝", children: [] }
-            ]
-          }
-        ]
-      }
+          ]}
+      ]}
     ];
 
     const rootDiv = document.getElementById('root');
 
-    // 데이터 저장
+    // 열려 있는 토글 경로를 저장
+    let openPaths = new Set();
+
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
     }
 
-    // 렌더링
     function render() {
       rootDiv.innerHTML = '';
       data.forEach((node, i) => {
@@ -73,20 +50,26 @@
       });
     }
 
-    // 노드 렌더링 (재귀)
     function renderNode(node, path) {
       const div = document.createElement('div');
       div.className = 'toggle';
+
+      const pathKey = path.join('-');
+      if (openPaths.has(pathKey)) div.classList.add('open');
+
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
-      title.onclick = () => div.classList.toggle('open');
 
-      // 액션 버튼 그룹
+      title.onclick = () => {
+        div.classList.toggle('open');
+        if (div.classList.contains('open')) openPaths.add(pathKey);
+        else openPaths.delete(pathKey);
+      };
+
       const actions = document.createElement('span');
       actions.className = 'actions';
 
-      // 하위 토글 추가 버튼
       const addBtn = document.createElement('button');
       addBtn.textContent = '+';
       addBtn.title = '하위 토글 추가';
@@ -101,7 +84,6 @@
         }
       };
 
-      // 수정 버튼
       const editBtn = document.createElement('button');
       editBtn.textContent = '✏️';
       editBtn.title = '수정';
@@ -116,7 +98,6 @@
         }
       };
 
-      // 삭제 버튼
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
       delBtn.title = '삭제';
@@ -125,6 +106,8 @@
         if (confirm('정말 삭제하시겠습니까?')) {
           removeNode(data, path);
           saveData();
+          // 삭제된 토글이 열려있었다면 제거
+          openPaths.delete(pathKey);
           render();
         }
       };
@@ -145,23 +128,15 @@
       return div;
     }
 
-    // 경로(path)를 통해 노드 찾기
     function getNodeByPath(arr, path) {
       return path.reduce((acc, cur) => acc.children ? acc.children[cur] : acc[cur], arr);
     }
 
-    // 노드 삭제
     function removeNode(arr, path) {
-      if (path.length === 1) {
-        arr.splice(path[0], 1);
-        return;
-      }
-      const parentPath = path.slice(0, -1);
-      const parent = getNodeByPath(arr, parentPath);
-      parent.children.splice(path[path.length - 1], 1);
+      if (path.length === 1) arr.splice(path[0], 1);
+      else getNodeByPath(arr, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
     }
 
-    // 최상위 토글 추가
     function addRootToggle() {
       const text = prompt('최상위 토글 내용을 입력하세요');
       if (text) {
