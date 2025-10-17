@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>체스 오프닝 (모바일 드래그 지원)</title>
+<title>체스 오프닝</title>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <style>
 body { font-family: Arial, sans-serif; padding: 20px; }
-button { padding: 2px 6px; font-size: 0.9em; margin-left: 3px; }
+button { padding: 2px 6px; font-size: 0.9em; margin-left: 3px; cursor: pointer; }
 .toggle { margin-left: 20px; margin-top: 5px; }
 .toggle-title { cursor: pointer; user-select: none; display: inline-block; }
 .toggle-title::before {
@@ -44,9 +44,7 @@ function saveData() {
 
 function render() {
   rootDiv.innerHTML = '';
-  data.forEach((node, i) => {
-    rootDiv.appendChild(renderNode(node, [i]));
-  });
+  data.forEach((node, i) => rootDiv.appendChild(renderNode(node, [i])));
   applySortable();
 }
 
@@ -161,7 +159,7 @@ function applySortable() {
         const parent = getNodeByPath(data, parentPath);
         const moved = parent.children.splice(evt.oldIndex, 1)[0];
         parent.children.splice(evt.newIndex, 0, moved);
-        saveData(); // ✅ render() 제거 → 무한 드래그 가능
+        saveData(); // render() 호출 X → 무제한 드래그 가능
       }
     });
   });
