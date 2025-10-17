@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (GIF 포함)</title>
+  <title>체스 오프닝 (GIF 숨기기/보이기)</title>
   <style>
     body { 
       font-size: 20px;
@@ -11,7 +11,7 @@
       background-color: rgb(144,144,144); /* 중간 회색 배경 */
     }
     button {
-      font-size: 0.75em; /* 버튼 글자 작게 */
+      font-size: 0.75em;
       padding: 2px 2px;
       margin-left: 3px;
       cursor: pointer;
@@ -21,7 +21,7 @@
       cursor: pointer;
       user-select: none;
       display: inline-block;
-      font-weight: bold; /* 굵게 */
+      font-weight: bold;
     }
     .toggle-title::before {
       content: "▸";
@@ -147,10 +147,21 @@
         saveData();
       };
 
+      // GIF 숨기기/보이기
+      const toggleGifBtn = document.createElement('button');
+      toggleGifBtn.textContent = '👁️';
+      toggleGifBtn.title = 'GIF 숨기기/보이기';
+      toggleGifBtn.onclick = (e) => {
+        e.stopPropagation();
+        const img = div.querySelector('img.gif-image');
+        if (img) img.style.display = img.style.display === 'none' ? 'block' : 'none';
+      };
+
       actions.appendChild(addBtn);
       actions.appendChild(editBtn);
       actions.appendChild(delBtn);
       actions.appendChild(gifBtn);
+      actions.appendChild(toggleGifBtn);
       title.appendChild(actions);
       div.appendChild(title);
 
