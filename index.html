@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (GIF 숨기기/보이기)</title>
+  <title>체스 오프닝 (GIF 보기 버튼)</title>
   <style>
     body { 
       font-size: 20px;
@@ -33,7 +33,7 @@
     .children { margin-left: 5px; display: none; } /* 들여쓰기 5px */
     .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
-    img.gif-image { max-width: 200px; display: block; margin-top: 5px; }
+    img.gif-image { max-width: 200px; display: none; margin-top: 5px; }
   </style>
 </head>
 <body>
@@ -147,11 +147,11 @@
         saveData();
       };
 
-      // GIF 숨기기/보이기
-      const toggleGifBtn = document.createElement('button');
-      toggleGifBtn.textContent = '👁️';
-      toggleGifBtn.title = 'GIF 숨기기/보이기';
-      toggleGifBtn.onclick = (e) => {
+      // GIF 보기 버튼 (기본 숨김)
+      const showGifBtn = document.createElement('button');
+      showGifBtn.textContent = '👁️ GIF 보기';
+      showGifBtn.title = 'GIF 보기';
+      showGifBtn.onclick = (e) => {
         e.stopPropagation();
         const img = div.querySelector('img.gif-image');
         if (img) img.style.display = img.style.display === 'none' ? 'block' : 'none';
@@ -161,16 +161,17 @@
       actions.appendChild(editBtn);
       actions.appendChild(delBtn);
       actions.appendChild(gifBtn);
-      actions.appendChild(toggleGifBtn);
+      actions.appendChild(showGifBtn);
       title.appendChild(actions);
       div.appendChild(title);
 
-      // GIF 렌더링
+      // GIF 렌더링 (기본 숨김)
       if (node.gif) {
         const img = document.createElement('img');
         img.src = node.gif;
         img.alt = 'GIF';
         img.className = 'gif-image';
+        img.style.display = 'none'; // 기본 숨김
         div.appendChild(img);
       }
 
