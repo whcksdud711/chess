@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (브랜치 뷰)</title>
+  <title>체스 오프닝 (브랜치 뷰 + 뒤로가기)</title>
   <style>
     body { 
       font-size: 20px;
@@ -33,16 +33,23 @@
     .children { margin-left: 10px; display: none; }
     .toggle.open > .children { display: block; }
     .actions {
-      display: block; /* 아래줄로 변경 */
+      display: block;
       margin: 5px 0 0 25px;
     }
     img.gif-image { max-width: 200px; display: none; margin-top: 5px; }
+    #breadcrumb {
+      font-size: 0.9em;
+      margin-bottom: 10px;
+      color: #222;
+    }
   </style>
 </head>
 <body>
   <h1>체스 오프닝</h1>
+  <div id="breadcrumb"></div>
   <button onclick="addRootToggle()">➕ 오프닝 추가</button>
   <button onclick="toggleAll()">전체 오프닝 열기/닫기</button>
+  <button onclick="goBack()">🔙 뒤로가기</button>
   <div id="root"></div>
 
   <script>
@@ -58,9 +65,11 @@
     ];
 
     const rootDiv = document.getElementById('root');
+    const breadcrumbDiv = document.getElementById('breadcrumb');
     let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
     let allOpen = false;
     let currentGifPath = null;
+    let currentPath = []; // 현재 브랜치 경로 기억용
 
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
@@ -72,6 +81,7 @@
       data.forEach((node, i) => {
         rootDiv.appendChild(renderNode(node, [i]));
       });
+      updateBreadcrumb();
     }
 
     function renderNode(node, path) {
@@ -95,7 +105,7 @@
         else openPaths.delete(pathKey);
         saveData();
 
-        // === (1) GIF 자동 표시 ===
+        // === GIF 자동 표시 ===
         if (node.gif) {
           if (currentGifPath && currentGifPath !== pathKey) {
             const prevDiv = document.querySelector(`[data-path='${currentGifPath}']`);
@@ -109,8 +119,10 @@
           currentGifPath = pathKey;
         }
 
-        // === (2) 현재 가지(branch)만 표시 ===
+        // === 현재 브랜치만 표시 ===
+        currentPath = path;
         updateVisibility(path);
+        updateBreadcrumb();
       };
 
       const actions = document.createElement('div');
@@ -203,14 +215,33 @@
         const path = div.dataset.path.split('-').map(Number);
         const isAncestor = path.every((v, i) => v === clickedPath[i]);
         const isDescendant = clickedPath.every((v, i) => v === path[i]);
-
-        // 조상 or 자신 or 자식만 보이기
-        if (isAncestor || isDescendant) {
-          div.style.display = 'block';
-        } else {
-          div.style.display = 'none';
-        }
+        if (isAncestor || isDescendant) div.style.display = 'block';
+        else div.style.display = 'none';
       });
+    }
+
+    function updateBreadcrumb() {
+      if (currentPath.length === 0) {
+        breadcrumbDiv.textContent = "📂 전체 오프닝 목록";
+        return;
+      }
+      let names = [];
+      for (let i = 0; i < currentPath.length; i++) {
+        const node = getNodeByPath(data, currentPath.slice(0, i + 1));
+        names.push(node.text.split(':')[0]);
+      }
+      breadcrumbDiv.textContent = "경로: " + names.join(" → ");
+    }
+
+    function goBack() {
+      if (currentPath.length === 0) return; // 이미 루트
+      currentPath = currentPath.slice(0, -1);
+      if (currentPath.length === 0) {
+        document.querySelectorAll('.toggle').forEach(div => div.style.display = 'block');
+      } else {
+        updateVisibility(currentPath);
+      }
+      updateBreadcrumb();
     }
 
     function getNodeByPath(arr, path) {
