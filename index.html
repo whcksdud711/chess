@@ -2,12 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (깊이별 색상, 연한 파랑 배경)</title>
+  <title>체스 오프닝 (연한 회색 배경, 깊이별 색상)</title>
   <style>
     body { 
       font-family: Arial, sans-serif; 
       padding: 20px; 
-      background-color: #a0c4ff; /* 연한 파랑 배경 */
+      background-color: #e0e0e0; /* 연한 회색 배경 */
     }
     button { padding: 2px 6px; font-size: 0.85em; margin-left: 3px; }
     .toggle { margin-top: 5px; }
@@ -19,7 +19,7 @@
       transition: transform 0.2s;
     }
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-    .children { margin-left: 5px; display: none; }
+    .children { margin-left: 5px; display: none; } /* 들여쓰기 5px */
     .toggle.open > .children { display: block; }
     .actions { display: inline-block; margin-left: 10px; }
   </style>
@@ -58,14 +58,14 @@
       const div = document.createElement('div');
       div.className = 'toggle';
 
-      const depth = path.length; // 1단계: 최상위
+      const depth = path.length; // 깊이 계산: 1단계 = 최상위
       const pathKey = path.join('-');
       if (openPaths.has(pathKey)) div.classList.add('open');
 
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
-      // 깊이에 따라 텍스트 색상 설정
+      // 홀수 단계 흰색, 짝수 단계 검은색
       title.style.color = depth % 2 === 1 ? 'white' : 'black';
 
       // 토글 열고 닫기
