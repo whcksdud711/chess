@@ -2,60 +2,48 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (2배 확대 버전)</title>
+  <title>체스 오프닝 (백업/복원 기능 포함)</title>
   <style>
     body { 
-      font-size: 40px; /* 기존 20 → 40 */
+      font-size: 40px; /* 기존보다 2배 */
       font-family: Arial, sans-serif; 
-      padding: 40px; /* 기존 20 → 40 */
+      padding: 40px; 
       background-color: rgb(144,144,144);
     }
-
     button {
-      font-size: 0.75em; /* 기존 0.75em → 1.5em (2배) */
-      padding: 4px 8px; /* 기존 2x4 → 4x8 */
-      margin-left: 6px; /* 기존 3 → 6 */
+      font-size: 0.75em;
+      padding: 8px 8px;
+      margin: 6px;
       cursor: pointer;
     }
-
-    .toggle { margin-top: 10px; } /* 기존 5 → 10 */
-
+    .toggle { margin-top: 10px; }
     .toggle-title {
       cursor: pointer;
       user-select: none;
-      display: inline-block;
+      display: block;
       font-weight: bold;
     }
-
     .toggle-title::before {
       content: "▸";
       display: inline-block;
-      margin-right: 12px; /* 기존 6 → 12 */
+      margin-right: 12px;
       transition: transform 0.2s;
     }
-
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-
-    .children { margin-left: 20px; display: none; } /* 기존 10 → 20 */
+    .children { margin-left: 20px; display: none; }
     .toggle.open > .children { display: block; }
-
-    .actions {
-      display: none;
-      margin: 10px 0 0 50px; /* 여백도 2배 */
-    }
-
-    img.gif-image { 
-      max-width: 400px; /* 기존 200 → 400 */
-      display: none;
-      margin-top: 10px; /* 기존 5 → 10 */
-    }
+    .actions { display: block; margin-left: 40px; }
+    img.gif-image { max-width: 400px; display: none; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h1>체스 오프닝</h1>
   <button onclick="addRootToggle()">➕ 오프닝 추가</button>
   <button onclick="toggleAll()">전체 오프닝 열기/닫기</button>
-  <button onclick="goBack()">🔙 뒤로가기</button>
+  <button onclick="saveBackup()">💾 데이터 저장</button>
+  <button onclick="loadBackup()">📂 데이터 불러오기</button>
+  <input type="file" id="backupFile" accept=".json" style="display:none" onchange="handleFileLoad(event)">
+  
   <div id="root"></div>
 
   <script>
@@ -63,18 +51,14 @@
       { text: "1.e4 : 킹즈 폰 오프닝", gif: "", children: [
           { text: "1...e5 : 오픈 게임", gif: "", children: [
               { text: "2.Nf3 : 킹즈 나이트 오프닝", gif: "", children: [] }
-          ]},
-          { text: "1...c5 : 시칠리안 디펜스", gif: "", children: [] }
-      ]},
-      { text: "1.d4 : 퀸즈 폰 오프닝", gif: "", children: [] },
-      { text: "1.c4 : 잉글리시 오프닝", gif: "", children: [] }
+          ]}
+      ]}
     ];
 
     const rootDiv = document.getElementById('root');
     let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
     let allOpen = false;
     let currentGifPath = null;
-    let currentPath = [];
 
     function saveData() {
       localStorage.setItem('toggleData', JSON.stringify(data));
@@ -83,58 +67,50 @@
 
     function render() {
       rootDiv.innerHTML = '';
-      data.forEach((node, i) => {
-        rootDiv.appendChild(renderNode(node, [i]));
-      });
+      data.forEach((node, i) => rootDiv.appendChild(renderNode(node, [i])));
     }
 
     function renderNode(node, path) {
       const div = document.createElement('div');
       div.className = 'toggle';
-      div.dataset.path = path.join('-');
-
-      const depth = path.length;
       const pathKey = path.join('-');
       if (openPaths.has(pathKey)) div.classList.add('open');
+      div.dataset.path = pathKey;
 
       const title = document.createElement('div');
       title.className = 'toggle-title';
       title.textContent = node.text;
-      title.style.color = depth % 2 === 1 ? '#ffffff' : '#000000';
+      title.style.color = path.length % 2 === 1 ? '#ffffff' : '#000000';
 
       title.onclick = (e) => {
         e.stopPropagation();
+        document.querySelectorAll('.toggle').forEach(t => t.style.display = 'none');
+        let visiblePath = '';
+        path.forEach((p, i) => {
+          visiblePath += (i > 0 ? '-' : '') + p;
+          const el = document.querySelector(`[data-path="${visiblePath}"]`);
+          if (el) el.style.display = 'block';
+        });
+        div.style.display = 'block';
         div.classList.toggle('open');
         if (div.classList.contains('open')) openPaths.add(pathKey);
         else openPaths.delete(pathKey);
-        saveData();
 
-        // GIF 자동 표시
+        // 버튼/이미지 보이기
+        document.querySelectorAll('.actions, .gif-image').forEach(e => e.style.display = 'none');
+        const actions = div.querySelector('.actions');
+        if (actions) actions.style.display = 'block';
         if (node.gif) {
-          if (currentGifPath && currentGifPath !== pathKey) {
-            const prevDiv = document.querySelector(`[data-path='${currentGifPath}']`);
-            if (prevDiv) {
-              const prevImg = prevDiv.querySelector('img.gif-image');
-              if (prevImg) prevImg.style.display = 'none';
-            }
-          }
           const img = div.querySelector('img.gif-image');
           if (img) img.style.display = 'block';
-          currentGifPath = pathKey;
         }
 
-        // 현재 브랜치만 표시
-        currentPath = path;
-        updateVisibility(path);
-
-        // 버튼 표시 업데이트
-        document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
-        const thisActions = div.querySelector('.actions');
-        if (thisActions) thisActions.style.display = 'block';
+        saveData();
       };
 
       const actions = document.createElement('div');
       actions.className = 'actions';
+      actions.style.display = 'none';
 
       const addBtn = document.createElement('button');
       addBtn.textContent = '➕';
@@ -154,7 +130,7 @@
         e.stopPropagation();
         const newText = prompt('새 이름으로 수정하세요', node.text);
         if (newText) {
-          getNodeByPath(data, path).text = newText;
+          node.text = newText;
           render();
           saveData();
         }
@@ -166,7 +142,6 @@
         e.stopPropagation();
         if (confirm('정말 삭제하시겠습니까?')) {
           getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
-          openPaths.delete(pathKey);
           render();
           saveData();
         }
@@ -186,23 +161,12 @@
         saveData();
       };
 
-      const showGifBtn = document.createElement('button');
-      showGifBtn.textContent = '👁️';
-      showGifBtn.onclick = (e) => {
-        e.stopPropagation();
-        const img = div.querySelector('img.gif-image');
-        if (img) img.style.display = img.style.display === 'none' ? 'block' : 'none';
-      };
-
-      [addBtn, editBtn, delBtn, gifBtn, showGifBtn].forEach(btn => actions.appendChild(btn));
-
-      div.appendChild(title);
-      div.appendChild(actions);
+      actions.append(addBtn, editBtn, delBtn, gifBtn);
+      div.append(title, actions);
 
       if (node.gif) {
         const img = document.createElement('img');
         img.src = node.gif;
-        img.alt = 'GIF';
         img.className = 'gif-image';
         img.style.display = 'none';
         div.appendChild(img);
@@ -210,38 +174,10 @@
 
       const childrenDiv = document.createElement('div');
       childrenDiv.className = 'children';
-      node.children.forEach((child, j) => {
-        childrenDiv.appendChild(renderNode(child, [...path, j]));
-      });
+      node.children.forEach((child, j) => childrenDiv.appendChild(renderNode(child, [...path, j])));
       div.appendChild(childrenDiv);
 
       return div;
-    }
-
-    function updateVisibility(clickedPath) {
-      document.querySelectorAll('.toggle').forEach(div => {
-        const path = div.dataset.path.split('-').map(Number);
-        const isAncestor = path.every((v, i) => v === clickedPath[i]);
-        const isDescendant = clickedPath.every((v, i) => v === path[i]);
-        if (isAncestor || isDescendant) div.style.display = 'block';
-        else div.style.display = 'none';
-      });
-    }
-
-    function goBack() {
-      if (currentPath.length === 0) return;
-      currentPath = currentPath.slice(0, -1);
-      if (currentPath.length === 0) {
-        document.querySelectorAll('.toggle').forEach(div => div.style.display = 'block');
-      } else {
-        updateVisibility(currentPath);
-      }
-      document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
-      const activeDiv = document.querySelector(`[data-path='${currentPath.join('-')}']`);
-      if (activeDiv) {
-        const actions = activeDiv.querySelector('.actions');
-        if (actions) actions.style.display = 'block';
-      }
     }
 
     function getNodeByPath(arr, path) {
@@ -260,7 +196,7 @@
     function toggleAll() {
       allOpen = !allOpen;
       openPaths.clear();
-      function traverse(arr, path=[]) {
+      function traverse(arr, path = []) {
         arr.forEach((node, i) => {
           const newPath = [...path, i];
           if (allOpen) openPaths.add(newPath.join('-'));
@@ -270,6 +206,37 @@
       traverse(data);
       render();
       saveData();
+    }
+
+    // 💾 데이터 저장
+    function saveBackup() {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'chess_openings_backup.json';
+      a.click();
+    }
+
+    // 📂 데이터 불러오기
+    function loadBackup() {
+      document.getElementById('backupFile').click();
+    }
+
+    function handleFileLoad(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          data = JSON.parse(e.target.result);
+          saveData();
+          render();
+          alert('데이터가 성공적으로 불러와졌습니다!');
+        } catch {
+          alert('잘못된 JSON 파일입니다.');
+        }
+      };
+      reader.readAsText(file);
     }
 
     render();
