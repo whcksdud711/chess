@@ -2,23 +2,23 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (2배 확대 버전)</title>
+  <title>체스 오프닝 (2배 확대 + GIF 자동)</title>
   <style>
     body { 
-      font-size: 40px; /* 기존 20 → 40 */
+      font-size: 40px;
       font-family: Arial, sans-serif; 
-      padding: 40px; /* 기존 20 → 40 */
+      padding: 40px;
       background-color: rgb(144,144,144);
     }
 
     button {
-      font-size: 0.75em; /* 기존 0.75em → 1.5em (2배) */
-      padding: 4px 8px; /* 기존 2x4 → 4x8 */
-      margin-left: 6px; /* 기존 3 → 6 */
+      font-size: 1.5em;
+      padding: 4px 8px;
+      margin-left: 6px;
       cursor: pointer;
     }
 
-    .toggle { margin-top: 10px; } /* 기존 5 → 10 */
+    .toggle { margin-top: 10px; }
 
     .toggle-title {
       cursor: pointer;
@@ -30,24 +30,24 @@
     .toggle-title::before {
       content: "▸";
       display: inline-block;
-      margin-right: 12px; /* 기존 6 → 12 */
+      margin-right: 12px;
       transition: transform 0.2s;
     }
 
     .toggle.open > .toggle-title::before { transform: rotate(90deg); }
 
-    .children { margin-left: 20px; display: none; } /* 기존 10 → 20 */
+    .children { margin-left: 20px; display: none; }
     .toggle.open > .children { display: block; }
 
     .actions {
       display: none;
-      margin: 10px 0 0 50px; /* 여백도 2배 */
+      margin: 10px 0 0 50px;
     }
 
     img.gif-image { 
-      max-width: 400px; /* 기존 200 → 400 */
+      max-width: 400px;
       display: none;
-      margin-top: 10px; /* 기존 5 → 10 */
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -59,7 +59,7 @@
   <div id="root"></div>
 
   <script>
-    let data = JSON.parse(localStorage.getItem('toggleData')) || [
+    let data = [
       { text: "1.e4 : 킹즈 폰 오프닝", gif: "", children: [
           { text: "1...e5 : 오픈 게임", gif: "", children: [
               { text: "2.Nf3 : 킹즈 나이트 오프닝", gif: "", children: [] }
@@ -71,15 +71,8 @@
     ];
 
     const rootDiv = document.getElementById('root');
-    let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
-    let allOpen = false;
     let currentGifPath = null;
     let currentPath = [];
-
-    function saveData() {
-      localStorage.setItem('toggleData', JSON.stringify(data));
-      localStorage.setItem('openPaths', JSON.stringify([...openPaths]));
-    }
 
     function render() {
       rootDiv.innerHTML = '';
@@ -95,7 +88,6 @@
 
       const depth = path.length;
       const pathKey = path.join('-');
-      if (openPaths.has(pathKey)) div.classList.add('open');
 
       const title = document.createElement('div');
       title.className = 'toggle-title';
@@ -105,9 +97,6 @@
       title.onclick = (e) => {
         e.stopPropagation();
         div.classList.toggle('open');
-        if (div.classList.contains('open')) openPaths.add(pathKey);
-        else openPaths.delete(pathKey);
-        saveData();
 
         // GIF 자동 표시
         if (node.gif) {
@@ -123,16 +112,19 @@
           currentGifPath = pathKey;
         }
 
-        // 현재 브랜치만 표시
-        currentPath = path;
-        updateVisibility(path);
-
-        // 버튼 표시 업데이트
+        // 버튼 표시
         document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
         const thisActions = div.querySelector('.actions');
         if (thisActions) thisActions.style.display = 'block';
+
+        // 현재 브랜치만 표시
+        currentPath = path;
+        updateVisibility(path);
       };
 
+      div.appendChild(title);
+
+      // 버튼 영역
       const actions = document.createElement('div');
       actions.className = 'actions';
 
@@ -144,7 +136,6 @@
         if (newText) {
           getNodeByPath(data, path).children.push({ text: newText, gif: "", children: [] });
           render();
-          saveData();
         }
       };
 
@@ -156,7 +147,6 @@
         if (newText) {
           getNodeByPath(data, path).text = newText;
           render();
-          saveData();
         }
       };
 
@@ -165,10 +155,8 @@
       delBtn.onclick = (e) => {
         e.stopPropagation();
         if (confirm('정말 삭제하시겠습니까?')) {
-          getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
-          openPaths.delete(pathKey);
+          getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length-1], 1);
           render();
-          saveData();
         }
       };
 
@@ -183,7 +171,6 @@
           if (url) node.gif = url;
         }
         render();
-        saveData();
       };
 
       const showGifBtn = document.createElement('button');
@@ -195,10 +182,9 @@
       };
 
       [addBtn, editBtn, delBtn, gifBtn, showGifBtn].forEach(btn => actions.appendChild(btn));
-
-      div.appendChild(title);
       div.appendChild(actions);
 
+      // GIF
       if (node.gif) {
         const img = document.createElement('img');
         img.src = node.gif;
@@ -208,6 +194,7 @@
         div.appendChild(img);
       }
 
+      // 하위 토글
       const childrenDiv = document.createElement('div');
       childrenDiv.className = 'children';
       node.children.forEach((child, j) => {
@@ -221,10 +208,12 @@
     function updateVisibility(clickedPath) {
       document.querySelectorAll('.toggle').forEach(div => {
         const path = div.dataset.path.split('-').map(Number);
-        const isAncestor = path.every((v, i) => v === clickedPath[i]);
-        const isDescendant = clickedPath.every((v, i) => v === path[i]);
-        if (isAncestor || isDescendant) div.style.display = 'block';
-        else div.style.display = 'none';
+        let show = true;
+        for (let i=0;i<clickedPath.length;i++) {
+          if (path[i] !== clickedPath[i]) { show = false; break; }
+        }
+        if (clickedPath.length > path.length) show = false;
+        div.style.display = show ? 'block' : 'none';
       });
     }
 
@@ -248,31 +237,4 @@
       return path.reduce((acc, cur) => acc.children ? acc.children[cur] : acc[cur], arr);
     }
 
-    function addRootToggle() {
-      const text = prompt('오프닝 이름을 입력하세요');
-      if (text) {
-        data.push({ text, gif: "", children: [] });
-        render();
-        saveData();
-      }
-    }
-
-    function toggleAll() {
-      allOpen = !allOpen;
-      openPaths.clear();
-      function traverse(arr, path=[]) {
-        arr.forEach((node, i) => {
-          const newPath = [...path, i];
-          if (allOpen) openPaths.add(newPath.join('-'));
-          traverse(node.children, newPath);
-        });
-      }
-      traverse(data);
-      render();
-      saveData();
-    }
-
-    render();
-  </script>
-</body>
-</html>
+    function addRootToggle
