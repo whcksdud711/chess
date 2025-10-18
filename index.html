@@ -1,199 +1,270 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>체스 오프닝</title>
-<style>
-  body { 
-    font-size: 40px; 
-    font-family: Arial, sans-serif; 
-    padding: 40px; 
-    background-color: rgb(144,144,144);
-  }
-  button {
-    font-size: 0.75em; /* 버튼 폰트 크기 */
-    padding: 4px 8px; 
-    margin-left: 6px; 
-    cursor: pointer;
-  }
-  .toggle { margin-top: 10px; }
-  .toggle-title {
-    cursor: pointer;
-    user-select: none;
-    display: inline-block;
-    font-weight: bold;
-  }
-  .toggle-title::before {
-    content: "▸";
-    display: inline-block;
-    margin-right: 12px;
-    transition: transform 0.2s;
-  }
-  .toggle.open > .toggle-title::before { transform: rotate(90deg); }
-  .children { margin-left: 20px; display: none; }
-  .toggle.open > .children { display: block; }
-  .actions {
-    display: none;
-    margin: 10px 0 0 50px;
-  }
-  img.gif-image { 
-    max-width: 400px;
-    display: none;
-    margin-top: 10px;
-  }
-</style>
-</head>
-<body>
-<h1>체스 오프닝</h1>
-<button onclick="addRootToggle()">➕ 오프닝 추가</button>
-<button onclick="toggleAll()">전체 오프닝 열기/닫기</button>
-<button onclick="goBack()">🔙 뒤로가기</button>
-<div id="root"></div>
-
-<script>
-let data = []; // 초기 데이터 없음
-const rootDiv = document.getElementById('root');
-let currentGifPath = null;
-let currentPath = [];
-
-function render() {
-  rootDiv.innerHTML = '';
-  data.forEach((node,i)=>rootDiv.appendChild(renderNode(node,[i])));
-}
-
-function renderNode(node,path){
-  const div=document.createElement('div');
-  div.className='toggle';
-  div.dataset.path=path.join('-');
-  const pathKey=path.join('-');
-
-  const title=document.createElement('div');
-  title.className='toggle-title';
-  title.textContent=node.text;
-
-  title.onclick=(e)=>{
-    e.stopPropagation();
-    div.classList.toggle('open');
-
-    // GIF 표시
-    if(node.gif){
-      if(currentGifPath && currentGifPath!==pathKey){
-        const prevDiv=document.querySelector(`[data-path='${currentGifPath}']`);
-        if(prevDiv){ const prevImg=prevDiv.querySelector('img.gif-image'); if(prevImg) prevImg.style.display='none'; }
-      }
-      const img=div.querySelector('img.gif-image');
-      if(img) img.style.display='block';
-      currentGifPath=pathKey;
+  <meta charset="UTF-8">
+  <title>체스 오프닝 (2배 확대 + 저장)</title>
+  <style>
+    body { 
+      font-size: 40px; 
+      font-family: Arial, sans-serif; 
+      padding: 40px; 
+      background-color: rgb(144,144,144);
     }
 
-    // 현재 브랜치만 표시
-    currentPath=path;
-    updateVisibility(path);
+    button {
+      font-size: 0.75em; 
+      padding: 4px 8px; 
+      margin-left: 6px; 
+      cursor: pointer;
+    }
 
-    // 버튼 표시
-    document.querySelectorAll('.actions').forEach(a=>a.style.display='none');
-    const thisActions=div.querySelector('.actions');
-    if(thisActions) thisActions.style.display='block';
-  };
+    .toggle { margin-top: 10px; }
 
-  const actions=document.createElement('div');
-  actions.className='actions';
+    .toggle-title {
+      cursor: pointer;
+      user-select: none;
+      display: inline-block;
+      font-weight: bold;
+    }
 
-  const addBtn=document.createElement('button');
-  addBtn.textContent='➕';
-  addBtn.onclick=(e)=>{
-    e.stopPropagation();
-    const newText=prompt('새 오프닝 이름을 입력하세요');
-    if(newText){ getNodeByPath(data,path).children.push({text:newText,gif:"",children:[]}); render(); }
-  };
+    .toggle-title::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 12px;
+      transition: transform 0.2s;
+    }
 
-  const editBtn=document.createElement('button');
-  editBtn.textContent='✏️';
-  editBtn.onclick=(e)=>{
-    e.stopPropagation();
-    const newText=prompt('새 이름으로 수정하세요',node.text);
-    if(newText){ getNodeByPath(data,path).text=newText; render(); }
-  };
+    .toggle.open > .toggle-title::before { transform: rotate(90deg); }
 
-  const delBtn=document.createElement('button');
-  delBtn.textContent='🗑️';
-  delBtn.onclick=(e)=>{
-    e.stopPropagation();
-    if(confirm('정말 삭제하시겠습니까?')){ getNodeByPath(data,path.slice(0,-1)).children.splice(path[path.length-1],1); render(); }
-  };
+    .children { margin-left: 20px; display: none; }
+    .toggle.open > .children { display: block; }
 
-  const gifBtn=document.createElement('button');
-  gifBtn.textContent=node.gif?'❌ GIF 삭제':'🖼️ GIF 추가';
-  gifBtn.onclick=(e)=>{
-    e.stopPropagation();
-    if(node.gif){ if(confirm('정말 삭제하시겠습니까?')) node.gif=""; }
-    else{ const url=prompt('GIF URL을 입력하세요'); if(url) node.gif=url; }
+    .actions {
+      display: none;
+      margin: 10px 0 0 50px; 
+    }
+
+    img.gif-image { 
+      max-width: 400px; 
+      display: none;
+      margin-top: 10px; 
+    }
+  </style>
+</head>
+<body>
+  <h1>체스 오프닝</h1>
+  <button onclick="addRootToggle()">➕ 오프닝 추가</button>
+  <button onclick="toggleAll()">전체 오프닝 열기/닫기</button>
+  <button onclick="goBack()">🔙 뒤로가기</button>
+  <div id="root"></div>
+
+  <script>
+    // 로컬스토리지에서 불러오기, 없으면 빈 배열
+    let data = JSON.parse(localStorage.getItem('toggleData')) || [];
+    let openPaths = new Set(JSON.parse(localStorage.getItem('openPaths') || '[]'));
+    let currentGifPath = null;
+    let currentPath = [];
+
+    const rootDiv = document.getElementById('root');
+
+    function saveData() {
+      localStorage.setItem('toggleData', JSON.stringify(data));
+      localStorage.setItem('openPaths', JSON.stringify([...openPaths]));
+    }
+
+    function render() {
+      rootDiv.innerHTML = '';
+      data.forEach((node, i) => {
+        rootDiv.appendChild(renderNode(node, [i]));
+      });
+    }
+
+    function renderNode(node, path) {
+      const div = document.createElement('div');
+      div.className = 'toggle';
+      div.dataset.path = path.join('-');
+
+      const depth = path.length;
+      const pathKey = path.join('-');
+      if (openPaths.has(pathKey)) div.classList.add('open');
+
+      const title = document.createElement('div');
+      title.className = 'toggle-title';
+      title.textContent = node.text;
+      title.style.color = depth % 2 === 1 ? '#ffffff' : '#000000';
+
+      title.onclick = (e) => {
+        e.stopPropagation();
+        div.classList.toggle('open');
+        if (div.classList.contains('open')) openPaths.add(pathKey);
+        else openPaths.delete(pathKey);
+        saveData();
+
+        // GIF 자동 표시
+        if (node.gif) {
+          if (currentGifPath && currentGifPath !== pathKey) {
+            const prevDiv = document.querySelector(`[data-path='${currentGifPath}']`);
+            if (prevDiv) {
+              const prevImg = prevDiv.querySelector('img.gif-image');
+              if (prevImg) prevImg.style.display = 'none';
+            }
+          }
+          const img = div.querySelector('img.gif-image');
+          if (img) img.style.display = 'block';
+          currentGifPath = pathKey;
+        }
+
+        // 현재 브랜치만 표시
+        currentPath = path;
+        updateVisibility(path);
+
+        // 버튼 표시
+        document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
+        const thisActions = div.querySelector('.actions');
+        if (thisActions) thisActions.style.display = 'block';
+      };
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '➕';
+      addBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newText = prompt('새 오프닝 이름을 입력하세요');
+        if (newText) {
+          getNodeByPath(data, path).children.push({ text: newText, gif: "", children: [] });
+          render();
+          saveData();
+        }
+      };
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = '✏️';
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newText = prompt('새 이름으로 수정하세요', node.text);
+        if (newText) {
+          getNodeByPath(data, path).text = newText;
+          render();
+          saveData();
+        }
+      };
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑️';
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm('정말 삭제하시겠습니까?')) {
+          getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
+          openPaths.delete(pathKey);
+          render();
+          saveData();
+        }
+      };
+
+      const gifBtn = document.createElement('button');
+      gifBtn.textContent = node.gif ? '❌ GIF 삭제' : '🖼️ GIF 추가';
+      gifBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (node.gif) {
+          if (confirm('정말 삭제하시겠습니까?')) node.gif = "";
+        } else {
+          const url = prompt('GIF URL을 입력하세요');
+          if (url) node.gif = url;
+        }
+        render();
+        saveData();
+      };
+
+      const showGifBtn = document.createElement('button');
+      showGifBtn.textContent = '👁️';
+      showGifBtn.onclick = (e) => {
+        e.stopPropagation();
+        const img = div.querySelector('img.gif-image');
+        if (img) img.style.display = img.style.display === 'none' ? 'block' : 'none';
+      };
+
+      [addBtn, editBtn, delBtn, gifBtn, showGifBtn].forEach(btn => actions.appendChild(btn));
+
+      div.appendChild(title);
+      div.appendChild(actions);
+
+      if (node.gif) {
+        const img = document.createElement('img');
+        img.src = node.gif;
+        img.alt = 'GIF';
+        img.className = 'gif-image';
+        img.style.display = 'none';
+        div.appendChild(img);
+      }
+
+      const childrenDiv = document.createElement('div');
+      childrenDiv.className = 'children';
+      node.children.forEach((child, j) => {
+        childrenDiv.appendChild(renderNode(child, [...path, j]));
+      });
+      div.appendChild(childrenDiv);
+
+      return div;
+    }
+
+    function updateVisibility(clickedPath) {
+      document.querySelectorAll('.toggle').forEach(div => {
+        const path = div.dataset.path.split('-').map(Number);
+        const isAncestor = path.every((v, i) => clickedPath[i] === v);
+        const isDescendant = clickedPath.every((v, i) => path[i] === v);
+        if (isAncestor || isDescendant) div.style.display = 'block';
+        else div.style.display = 'none';
+      });
+    }
+
+    function goBack() {
+      if (currentPath.length === 0) return;
+      currentPath = currentPath.slice(0, -1);
+      if (currentPath.length === 0) {
+        document.querySelectorAll('.toggle').forEach(div => div.style.display = 'block');
+      } else {
+        updateVisibility(currentPath);
+      }
+      document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
+      const activeDiv = document.querySelector(`[data-path='${currentPath.join('-')}']`);
+      if (activeDiv) {
+        const actions = activeDiv.querySelector('.actions');
+        if (actions) actions.style.display = 'block';
+      }
+    }
+
+    function getNodeByPath(arr, path) {
+      return path.reduce((acc, cur) => acc.children ? acc.children[cur] : acc[cur], arr);
+    }
+
+    function addRootToggle() {
+      const text = prompt('오프닝 이름을 입력하세요');
+      if (text) {
+        data.push({ text, gif: "", children: [] });
+        render();
+        saveData();
+      }
+    }
+
+    function toggleAll() {
+      // 전체 열기/닫기
+      const allOpen = ![...openPaths].length; 
+      openPaths.clear();
+      function traverse(arr, path=[]) {
+        arr.forEach((node, i) => {
+          const newPath = [...path, i];
+          if (allOpen) openPaths.add(newPath.join('-'));
+          traverse(node.children, newPath);
+        });
+      }
+      traverse(data);
+      render();
+      saveData();
+    }
+
     render();
-  };
-
-  const showGifBtn=document.createElement('button');
-  showGifBtn.textContent='👁️';
-  showGifBtn.onclick=(e)=>{
-    e.stopPropagation();
-    const img=div.querySelector('img.gif-image');
-    if(img) img.style.display=img.style.display==='none'?'block':'none';
-  };
-
-  [addBtn,editBtn,delBtn,gifBtn,showGifBtn].forEach(btn=>actions.appendChild(btn));
-
-  div.appendChild(title);
-  div.appendChild(actions);
-
-  if(node.gif){
-    const img=document.createElement('img');
-    img.src=node.gif;
-    img.alt='GIF';
-    img.className='gif-image';
-    img.style.display='none';
-    div.appendChild(img);
-  }
-
-  const childrenDiv=document.createElement('div');
-  childrenDiv.className='children';
-  node.children.forEach((child,j)=>childrenDiv.appendChild(renderNode(child,[...path,j])));
-  div.appendChild(childrenDiv);
-
-  return div;
-}
-
-function updateVisibility(clickedPath){
-  document.querySelectorAll('.toggle').forEach(div=>{
-    const path=div.dataset.path.split('-').map(Number);
-    const isAncestor=clickedPath.every((v,i)=>v===path[i]);
-    const isDescendant=path.every((v,i)=>v===clickedPath[i]);
-    if(isAncestor||isDescendant) div.style.display='block';
-    else div.style.display='none';
-  });
-}
-
-function goBack(){
-  if(currentPath.length===0) return;
-  currentPath=currentPath.slice(0,-1);
-  if(currentPath.length===0) document.querySelectorAll('.toggle').forEach(div=>div.style.display='block');
-  else updateVisibility(currentPath);
-  document.querySelectorAll('.actions').forEach(a=>a.style.display='none');
-  const activeDiv=document.querySelector(`[data-path='${currentPath.join('-')}']`);
-  if(activeDiv){ const actions=activeDiv.querySelector('.actions'); if(actions) actions.style.display='block'; }
-}
-
-function getNodeByPath(arr,path){ return path.reduce((acc,cur)=>acc.children?acc.children[cur]:acc[cur],arr); }
-
-function addRootToggle(){
-  const text=prompt('오프닝 이름을 입력하세요');
-  if(text){ data.push({text, gif:"", children:[]}); render(); }
-}
-
-function toggleAll(){
-  document.querySelectorAll('.toggle').forEach(div=>div.style.display='block');
-  document.querySelectorAll('.toggle').forEach(div=>div.classList.add('open'));
-}
-
-render();
-</script>
+  </script>
 </body>
 </html>
