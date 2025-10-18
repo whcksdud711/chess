@@ -2,17 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>체스 오프닝 (2배 확대 + GIF 자동)</title>
+  <title>체스 오프닝 (수정)</title>
   <style>
     body { 
-      font-size: 40px;
+      font-size: 40px; /* 전체 2배 확대 유지 */
       font-family: Arial, sans-serif; 
-      padding: 40px;
+      padding: 40px; 
       background-color: rgb(144,144,144);
     }
 
     button {
-      font-size: 1.5em;
+      font-size: 0.75em; /* 버튼은 원래대로 */
       padding: 4px 8px;
       margin-left: 6px;
       cursor: pointer;
@@ -71,6 +71,7 @@
     ];
 
     const rootDiv = document.getElementById('root');
+    let allOpen = false;
     let currentGifPath = null;
     let currentPath = [];
 
@@ -79,6 +80,15 @@
       data.forEach((node, i) => {
         rootDiv.appendChild(renderNode(node, [i]));
       });
+
+      // 초기 상태: 최상위 토글만 보이게
+      if (currentPath.length === 0) {
+        document.querySelectorAll('.toggle').forEach(div => {
+          const path = div.dataset.path.split('-');
+          if (path.length === 1) div.style.display = 'block';
+          else div.style.display = 'none';
+        });
+      }
     }
 
     function renderNode(node, path) {
@@ -112,19 +122,16 @@
           currentGifPath = pathKey;
         }
 
+        // 현재 브랜치만 표시
+        currentPath = path;
+        updateVisibility(path);
+
         // 버튼 표시
         document.querySelectorAll('.actions').forEach(a => a.style.display = 'none');
         const thisActions = div.querySelector('.actions');
         if (thisActions) thisActions.style.display = 'block';
-
-        // 현재 브랜치만 표시
-        currentPath = path;
-        updateVisibility(path);
       };
 
-      div.appendChild(title);
-
-      // 버튼 영역
       const actions = document.createElement('div');
       actions.className = 'actions';
 
@@ -155,7 +162,7 @@
       delBtn.onclick = (e) => {
         e.stopPropagation();
         if (confirm('정말 삭제하시겠습니까?')) {
-          getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length-1], 1);
+          getNodeByPath(data, path.slice(0, -1)).children.splice(path[path.length - 1], 1);
           render();
         }
       };
@@ -182,9 +189,10 @@
       };
 
       [addBtn, editBtn, delBtn, gifBtn, showGifBtn].forEach(btn => actions.appendChild(btn));
+
+      div.appendChild(title);
       div.appendChild(actions);
 
-      // GIF
       if (node.gif) {
         const img = document.createElement('img');
         img.src = node.gif;
@@ -194,7 +202,6 @@
         div.appendChild(img);
       }
 
-      // 하위 토글
       const childrenDiv = document.createElement('div');
       childrenDiv.className = 'children';
       node.children.forEach((child, j) => {
@@ -208,11 +215,13 @@
     function updateVisibility(clickedPath) {
       document.querySelectorAll('.toggle').forEach(div => {
         const path = div.dataset.path.split('-').map(Number);
-        let show = true;
-        for (let i=0;i<clickedPath.length;i++) {
-          if (path[i] !== clickedPath[i]) { show = false; break; }
+        let show = false;
+        for (let i = 0; i < clickedPath.length; i++) {
+          if (path[i] !== clickedPath[i]) break;
+          show = true;
         }
-        if (clickedPath.length > path.length) show = false;
+        // 자신의 자식 경로면 보이기
+        if (path.length > clickedPath.length && path.slice(0, clickedPath.length).every((v,i)=>v===clickedPath[i])) show = true;
         div.style.display = show ? 'block' : 'none';
       });
     }
@@ -221,7 +230,10 @@
       if (currentPath.length === 0) return;
       currentPath = currentPath.slice(0, -1);
       if (currentPath.length === 0) {
-        document.querySelectorAll('.toggle').forEach(div => div.style.display = 'block');
+        document.querySelectorAll('.toggle').forEach(div => {
+          if (div.dataset.path.split('-').length === 1) div.style.display = 'block';
+          else div.style.display = 'none';
+        });
       } else {
         updateVisibility(currentPath);
       }
@@ -235,6 +247,3 @@
 
     function getNodeByPath(arr, path) {
       return path.reduce((acc, cur) => acc.children ? acc.children[cur] : acc[cur], arr);
-    }
-
-    function addRootToggle
